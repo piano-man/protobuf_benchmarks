@@ -1,0 +1,13 @@
+syntax = "proto3";
+option optimize_for = SPEED;
+package pb;
+
+
+message Object {
+    bytes name = 1;
+    repeated uint32 mappings = 2;
+  }
+  
+  message ObjectList {
+    repeated Object list = 1;
+  }
