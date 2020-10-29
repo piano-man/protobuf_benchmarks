@@ -3,9 +3,12 @@
 #include <string>
 #include<stdint.h>
 #include "./pb/test.pb.h"
+#include<nlohmann/json.hpp>
 #include <benchmark/benchmark.h>
+#include "rapidjson/document.h"
 
 using namespace std;
+using json = nlohmann::json;
 
 pb::ObjectList generate(int num_obj, int num_mappings)
 {
@@ -23,7 +26,86 @@ pb::ObjectList generate(int num_obj, int num_mappings)
 
 }
 
-static void BM_SmallData(benchmark::State& state)
+static void BM_JSON_SmallData(benchmark::State& state)
+{
+    json small_data;
+    vector<int32_t> v;
+    for(int i = 0 ; i < 1 ; i++)
+    {
+        json obj;
+        obj["name"] = "hellohello";
+        vector<int32_t> v;
+        for(int j = 0 ; j < 5 ; j++)
+        {
+            v.push_back(j+100);
+        }
+        obj["mappings"] = v;
+        small_data["list"].push_back(obj);
+    }
+    string ser_sd = small_data.dump();
+    char* temp = &ser_sd[0];
+    rapidjson::Document deser_sd;
+    for(auto _ : state) {
+        // json deser_sd = json::parse(ser_sd);
+        deser_sd.Parse(temp);
+    }
+}
+BENCHMARK(BM_JSON_SmallData);
+
+static void BM_JSON_MediumData(benchmark::State& state)
+{
+    json medium_data;
+    vector<int32_t> v;
+    for(int i = 0 ; i < 10 ; i++)
+    {
+        json obj;
+        obj["name"] = "hellohello";
+        vector<int32_t> v;
+        for(int j = 0 ; j < 10 ; j++)
+        {
+            v.push_back(j+100);
+        }
+        obj["mappings"] = v;
+        medium_data["list"].push_back(obj);
+    }
+    string ser_md = medium_data.dump();
+    const char* temp = &ser_md[0];
+    rapidjson::Document deser_md;
+    for(auto _ : state) {
+        // json deser_md = json::parse(ser_md);
+        deser_md.Parse(temp);
+    }
+}
+BENCHMARK(BM_JSON_MediumData);
+
+static void BM_JSON_LargeData(benchmark::State& state)
+{
+    json large_data;
+    vector<int32_t> v;
+    for(int i = 0 ; i < 100 ; i++)
+    {
+        json obj;
+        obj["name"] = "hellohello";
+        vector<int32_t> v;
+        for(int j = 0 ; j < 100 ; j++)
+        {
+            v.push_back(j+100);
+        }
+        obj["mappings"] = v;
+        large_data["list"].push_back(obj);
+    }
+    string ser_ld = large_data.dump();
+    const char* temp = &ser_ld[0];
+    rapidjson::Document deser_ld;
+    for(auto _ : state) {
+        // json deser_ld = json::parse(ser_ld);
+        deser_ld.Parse(temp);
+    }
+}
+BENCHMARK(BM_JSON_LargeData);
+
+
+static void BM_Proto_SmallData(benchmark::State& state)
 {
     pb::ObjectList small_data;
     small_data = generate(1, 5);
@@ -34,9 +116,9 @@ static void BM_SmallData(benchmark::State& state)
         deser_sd.ParseFromString(ser_sd);
     }
 }
-BENCHMARK(BM_SmallData);
+BENCHMARK(BM_Proto_SmallData);
 
-static void BM_MediumData(benchmark::State& state)
+static void BM_Proto_MediumData(benchmark::State& state)
 {
     pb::ObjectList medium_data;
     medium_data = generate(10, 10);
@@ -47,9 +129,9 @@ static void BM_MediumData(benchmark::State& state)
         deser_md.ParseFromString(ser_md);
     }
 }
-BENCHMARK(BM_MediumData);
+BENCHMARK(BM_Proto_MediumData);
 
-static void BM_LargeData(benchmark::State& state)
+static void BM_Proto_LargeData(benchmark::State& state)
 {
     pb::ObjectList large_data;
     large_data = generate(100, 100);
@@ -60,12 +142,10 @@ static void BM_LargeData(benchmark::State& state)
         deser_ld.ParseFromString(ser_ld);
     }
 }
-BENCHMARK(BM_LargeData);
+BENCHMARK(BM_Proto_LargeData);
 
 
 BENCHMARK_MAIN();
-
-
 
 //parsing desearilized objects; test is of type pb::ObjectList
 // for(int i = 0 ; i < test.list_size() ; i++)
